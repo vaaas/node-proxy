@@ -2,7 +2,6 @@
 	"listen": "0.0.0.0:80",
 	"ssl": false,
 	"sites": {
-		"vm.local": "default",
-		"test.vm.local": "test"
+		"vm.local": "default"
 	}
 }

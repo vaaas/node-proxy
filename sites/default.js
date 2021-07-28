@@ -1,1 +1,8 @@
-module.exports = function(req, socket) { socket.end('yo') }
+module.exports = async function(req) {
+	return {
+		status: 200,
+		data: 'yo ho ho',
+		mimetype: 'text/plain',
+		headers: [],
+	}
+}
