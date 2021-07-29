@@ -5,6 +5,7 @@ const http = require('http')
 const https = require('https')
 const fs = require('fs')
 const zlib = require('zlib')
+const serve = require('serve')
 
 const CPUS = os.cpus().length
 const CONF = JSON.parse(fs.readFileSync('conf.json'))
@@ -58,14 +59,3 @@ function redirect(request, socket) {
 }
 
 function repeat(f, n) { for (let i = 0; i < n; i++) f() }
-
-const serve = socket => response => {
-	response.headers.push(['Content-Type', response.mimetype], ['Content-Encoding', 'gzip'])
-	socket.writeHead(response.status, response.headers)
-	const compressed = zlib.createGzip()
-	if (response.data.constructor === fs.ReadStream)
-		response.data.pipe(compressed)
-	else
-		compressed.end(Buffer.from(response.data))
-	compressed.pipe(socket)
-}
