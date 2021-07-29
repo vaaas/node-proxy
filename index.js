@@ -4,7 +4,6 @@ const os = require('os')
 const http = require('http')
 const https = require('https')
 const fs = require('fs')
-const zlib = require('zlib')
 const serve = require('serve')
 
 const CPUS = os.cpus().length
@@ -31,7 +30,7 @@ function main() {
 			key: fs.readFileSync(CONF.ssl.key, 'utf8'),
 			cert: fs.readFileSync(CONF.ssl.cert, 'utf8'),
 		}, route)
-		rserver = http.createServer(redirect)
+		const rserver = http.createServer(redirect)
 		rserver.listen(80, host, () =>
 			console.log('redirect server listening at', host + ':' + 80))
 	}
