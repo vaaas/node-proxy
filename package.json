@@ -3,6 +3,6 @@
         "determine-mime-type": "github:vaaas/determine-mime-type",
         "parse-url": "github:vaaas/parse-url",
         "read-post-data": "github:vaaas/read-post-data",
-        "serve": "github:vaaas/serve"
+        "http-server": "github:vaaas/http-server"
     }
 }

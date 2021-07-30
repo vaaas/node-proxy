@@ -1,10 +1,8 @@
 'use strict'
+const http_server = require('http-server')
 const cluster = require('cluster')
 const os = require('os')
-const http = require('http')
-const https = require('https')
 const fs = require('fs')
-const serve = require('serve')
 
 const CPUS = os.cpus().length
 const CONF = JSON.parse(fs.readFileSync('conf.json'))
@@ -12,49 +10,49 @@ const SITES = Object.fromEntries(
 	Object.entries(CONF.sites)
 	.map(x => [x[0], require(`./sites/${x[1]}.js`)]))
 
-if (cluster.isWorker) main()
-else repeat(cluster.fork, CPUS)
-
 function main() {
-	let server, host, port
+	if (cluster.isWorker) start_servers()
+	else repeat(cluster.fork, CPUS)
+}
+
+function start_servers() {
+	let host, port
 	{
 		const parts = CONF.listen.split(':')
 		host = parts[0]
 		port = parseFloat(parts[1])
 	}
-
 	if (CONF.ssl === false)
-		server = http.createServer(route)
+		http_server({ router: route, host, port })
 	else {
-		server = https.createServer({
+		http_server({
+			router: route,
+			host,
+			port,
 			key: fs.readFileSync(CONF.ssl.key, 'utf8'),
 			cert: fs.readFileSync(CONF.ssl.cert, 'utf8'),
-		}, route)
-		const rserver = http.createServer(redirect)
-		rserver.listen(80, host, () =>
-			console.log('redirect server listening at', host + ':' + 80))
+		})
+		http_server({ router: redirect, host, port })
 	}
-	server.listen(port, host, () =>
-		console.log('server listening at', CONF.listen))
 }
 
-function route(request, socket) {
+function route(request) {
 	const f = SITES[request.headers.host]
-	if (f)
-		f(request)
-		.catch(e => ({ status: 500, mimetype: 'text/plain', data: e.message, headers: [] }))
-		.then(serve(socket))
-	else {
-		socket.writeHead(404)
-		socket.end('Not found')
-	}
+	return f ? f(request) : Promise.resolve({
+		status: 404,
+		mimetype: 'text/plain',
+		headers: [],
+		data: 'Not found'
+	})
 }
 
-function redirect(request, socket) {
-	socket.writeHead(307, {
-		Location: request.headers.host + request.url
-	})
-	socket.end('')
-}
+const redirect = request => Promise.resolve({
+	status: 307,
+	mimetype: 'text/plain',
+	data: 'Redirect',
+	headers: [[ 'Location', request.headers.host + request.url ]]
+})
 
 function repeat(f, n) { for (let i = 0; i < n; i++) f() }
+
+main()
