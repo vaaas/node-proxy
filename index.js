@@ -11,19 +11,19 @@ const SITES = Object.fromEntries
 	.map(x => [x[0], require(`./sites/${x[1]}.js`)]))
 
 function main()
-	{ if (cluster.isWorker) start_servers()
+{	if (cluster.isWorker) start_servers()
 	else repeat(cluster.fork, CPUS) }
 
 function start_servers()
-	{ const parts = CONF.listen.split(':')
+{	const parts = CONF.listen.split(':')
 	const host = parts[0]
 	const port = parseFloat(parts[1])
 
 	if (CONF.ssl === false)
 		http_server({ router: route, host, port })
 	else
-		{ http_server
-			({ router: route,
+	{	http_server
+		({	router: route,
 			host,
 			port,
 			key: fs.readFileSync(CONF.ssl.key, 'utf8'),
@@ -31,18 +31,18 @@ function start_servers()
 		http_server({ router: redirect, host, port }) }}
 
 function route(request)
-	{ const f = SITES[request.headers.host]
+{	const f = SITES[request.headers.host]
 	return f ? f(request) : Promise.resolve
-		({ status: 404,
+		({	status: 404,
 			mimetype: 'text/plain',
 			headers: [],
 			data: 'Not found' }) }
 
 const redirect = request => Promise.resolve
-	({ status: 307,
-	mimetype: 'text/plain',
-	data: 'Redirect',
-	headers: [[ 'Location', request.headers.host + request.url ]] })
+	({	status: 307,
+		mimetype: 'text/plain',
+		data: 'Redirect',
+		headers: [[ 'Location', request.headers.host + request.url ]] })
 
 function repeat(f, n) { for (let i = 0; i < n; i++) f() }
 
