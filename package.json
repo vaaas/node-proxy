@@ -1,8 +1,8 @@
 {
     "dependencies": {
         "determine-mime-type": "github:vaaas/determine-mime-type",
+        "http-server": "github:vaaas/http-server",
         "parse-url": "github:vaaas/parse-url",
-        "read-post-data": "github:vaaas/read-post-data",
-        "http-server": "github:vaaas/http-server"
+        "read-post-data": "github:vaaas/read-post-data"
     }
 }
