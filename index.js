@@ -1,55 +1,46 @@
 'use strict'
-const http_server = require('http-server')
-const cluster = require('cluster')
-const os = require('os')
-const fs = require('fs')
+import { existsSync, readdirSync } from 'node:fs'
+import { createServer as createPlainServer } from 'node:http'
+import { createServer as createSecureServer } from 'node:https'
 
-const CPUS = os.cpus().length
-const CONF = JSON.parse(fs.readFileSync('conf.json'))
-const SITES = Object.fromEntries
-	(Object.entries(CONF.sites)
-	.map(x => [x[0], require(`./sites/${x[1]}.js`)]))
-
-function main() {
-    if (cluster.isWorker) start_servers()
-	else repeat(cluster.fork, CPUS)
+const request_listener = SITES => (req, res) => {
+	const f = SITES[req.headers.host]
+	if (!f) {
+		res.writeHead(404)
+		res.end('Not found')
+	} else f(req, res)
 }
 
-function start_servers() {
-	const parts = CONF.listen.split(':')
-	const host = parts[0]
-	const port = parseFloat(parts[1])
-
-	if (CONF.ssl === false)
-		http_server({ router: route, host, port })
-	else {
-		http_server({
-			router: route,
-			host,
-			port,
-			key: fs.readFileSync(CONF.ssl.key, 'utf8'),
-			cert: fs.readFileSync(CONF.ssl.cert, 'utf8'),
-		})
-		http_server({ router: redirect, host, port: port+1 })
-}}
-
-function route(request) {
-	const f = SITES[request.headers.host]
-	return f ? f(request) : Promise.resolve({
-		status: 404,
-		mimetype: 'text/plain',
-		headers: [],
-		data: 'Not found',
-	})
+function get_conf() {
+	const cfile = existsSync('./conf.js') ? './conf.js' : './example.conf.js';
+	if (cfile === './example.conf.js')
+		console.warn('Configuration file not found. Using example configuration file')
+	return import(cfile).then(x => x.default)
 }
 
-const redirect = request => Promise.resolve({
-	status: 307,
-	mimetype: 'text/plain',
-	data: 'Redirect',
-	headers: [[ 'Location', request.headers.host + request.url ]]
-})
+const pretty_name = x => x.split('.').slice(0, -1).join('.')
 
-function repeat(f, n) { for (let i = 0; i < n; i++) f() }
+async function make_sites() {
+	const xs = {}
+	for (const x of readdirSync('./sites'))
+		xs[pretty_name(x)] = await import(`./sites/${x}`).then(x => x.default)
+	return xs
+}
+
+async function main() {
+	const conf = await get_conf()
+	const SITES = await make_sites()
+
+	const server = conf.ssl
+		? createSecureServer(conf.ssl, request_listener(SITES))
+		: createPlainServer(request_listener(SITES))
+
+	server.listen(conf.net.port, conf.net.host,
+		() => console.log(
+			`Server listening to ${conf.net.host}:${conf.net.port}`,
+			`Sites enabled: ${Object.keys(SITES).join(', ')}`
+		)
+	)
+}
 
 main()

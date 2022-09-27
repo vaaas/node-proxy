@@ -1,8 +1,5 @@
 {
-    "dependencies": {
-        "determine-mime-type": "github:vaaas/determine-mime-type",
-        "http-server": "github:vaaas/http-server",
-        "parse-url": "github:vaaas/parse-url",
-        "read-post-data": "github:vaaas/read-post-data"
-    }
+	"name": "node-proxy",
+	"version": "1.0.0",
+	"type": "module"
 }
