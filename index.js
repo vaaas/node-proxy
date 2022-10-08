@@ -44,8 +44,8 @@ const import_all_defaults = async (dir) => {
 
 async function main() {
 	const conf = await get_conf()
-	const SITES = await import_all_defaults('sites')
-	const WS_SITES = await import_all_defaults('websockets')
+	const SITES = await import_all_defaults('./sites')
+	const WS_SITES = await import_all_defaults('./websockets')
 
 	const websocket_server = new WebSocketServer({ noServer: true })
 		.on('connection', on_ws_connection)
