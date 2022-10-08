@@ -35,24 +35,17 @@ const attempt_read_dir = (dir) => {
 	catch (e) { return [] }
 }
 
-const make_sites = () =>
-	attempt_read_dir('./sites')
-	.reduce(async (sites, x) => {
-		sites[pretty_name(x)] = await import(`./sites/${x}`).then(x => x.default)
-		return sites
-	}, {})
-
-const make_ws_sites = () =>
-	attempt_read_dir('./websockets')
-	.reduce(async (sites, x) => {
-		sites[pretty_name(x)] = await import(`./websockets/${x}`).then(x => x.default)
-		return sites
-	}, {})
+const import_all_defaults = async (dir) => {
+	const xs = {}
+	for (const x of attempt_read_dir(dir))
+		xs[pretty_name(x)] = await import(`${dir}/${x}`).then(x => x.default)
+	return xs
+}
 
 async function main() {
 	const conf = await get_conf()
-	const SITES = await make_sites()
-	const WS_SITES = await make_ws_sites()
+	const SITES = await import_all_defaults('sites')
+	const WS_SITES = await import_all_defaults('websockets')
 
 	const websocket_server = new WebSocketServer({ noServer: true })
 		.on('connection', on_ws_connection)
