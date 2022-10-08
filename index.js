@@ -14,10 +14,8 @@ const on_request = SITES => (req, res) => {
 
 const on_upgrade = (server, SITES) => (req, socket, head) => {
 	const f = SITES[req.headers.host]
-	if (!f) {
-		res.writeHead(404)
-		return res.end('Not found')
-	}
+	if (!f)
+		return socket.destroy()
 	server.handleUpgrade(req, socket, head, ws => server.emit('connection', f, req, ws))
 }
 
